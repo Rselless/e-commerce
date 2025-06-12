@@ -2,68 +2,92 @@ import { Jogo } from "../model/Jogo";
 import { Conta } from "../model/Conta";
 import { JogoRepository } from "../repository/JogoRepository";
 import { colors } from "../util/Colors";
+import { Carrinhho } from "../model/Carrinho";
+import { Loja } from "../model/Loja";
 
 export class JogoController implements JogoRepository{
-    private listaContas:Array<Conta>=new Array<Conta>();
-    private listaJogos:Array<Jogo>=new Array<Jogo>();
+    private conta:Conta=new Conta(`joao`,500.00, 1);
+    private listaLoja:Array<Jogo>=new Array<Jogo>();
+    private listaBiblioteca:Array<Jogo>=new Array<Jogo>();
     numero:number=0
 
-    procurarPorNumero(numero: number): void{
-    let buscaJogo = this.buscarJogoArray(numero);
-    if (buscaJogo != null) {
-        buscaJogo.visualizar();
-    } else {
-        console.log(colors.fg.red, `\nO Jogo numero: ${numero} nao foi encontrado!`, colors.reset);
+    visualizarConta(): void {
+        this.conta.visualizar()
     }
+
+	listarJogosLoja(): void {
+        if (this.listaLoja.length===0){
+            throw new Error(`A loja nao possui jogos disponiveis!`)
+        }else {            
+        for (let jogo of this.listaLoja){
+            jogo.visualizar()
+        }
+            };
     }
-	listarTodas(): void {
-    for (let jogo of this.listaJogos){
-        jogo.visualizar()
+
+    listarJogosBiblioteca(): void {
+        for (let jogo of this.listaBiblioteca){
+            jogo.visualizar()
+        };
     }
+
+    cadastrarJogo(jogo:Jogo): void{
+        this.listaLoja.push(jogo);
+        console.log(colors.fg.cyanstrong,`\nO Jogo: ${jogo.nome} foi criado com sucesso!`,colors.reset); 
     }
-	cadastrar(conta:Conta): void{
-    this.listaContas.push(conta);
-    console.log(colors.fg.cyanstrong,`\nA Conta numero: ${conta.numConta} foi criada com sucesso!`,colors.reset); 
+
+    adicionarJogo(jogo:Jogo): void{
+        this.listaBiblioteca.push(jogo);
+        console.log(colors.fg.cyanstrong,`\nO Jogo: ${jogo.nome} foi adicionado a biblioteca!`,colors.reset); 
     }
-	atualizar(conta: Conta): void{
-    let buscaConta=this.buscarContaArray(conta.numConta)
+
+    public buscarJogoLoja(numero:number): Jogo|null {
+        for(let jogo of this.listaLoja){
+            if(jogo.numero === numero) {
+                return jogo
+            }
+        } return null;
+    }
+
+    public gerarNumeroLoja():number{
+        let num = this.listaLoja.length+1;
+        return num++;
+    }
+        
+    public gerarNumeroBiblioteca():number{
+        let num = this.listaBiblioteca.length + 1;
+        return num++;
+    }
+
+    public comprar(numeroJogo: number): void {
+        const jogo = this.buscarJogoLoja(numeroJogo) as Loja
+        
+        const carrinho = new Carrinhho(jogo, this.conta)
+        const novoSaldo = carrinho.comprarJogo()
+        if (novoSaldo<this.conta.saldo){
+        this.conta.saldo = novoSaldo as number
+        this.adicionarJogo(jogo)
+        this.removerJogoLoja(numeroJogo)
+        }
+    }
     
-    if(buscaConta!=null){
-        this.listaContas[this.listaContas.indexOf(buscaConta)]=conta;
-        console.log(colors.fg.blue,`\nA conta numero: ${conta.numConta} foi atualizada com sucesso!`,colors.reset)
-    }else
-        console.log(colors.fg.yellow,`\nA Conta numero: ${conta.numConta} nao foi encontrada!`,colors.reset)
+    public removerJogoLoja(numero:number): void{
+        this.listaLoja.splice(numero-1,1)
+        let i=0;
+        for(let jogo of this.listaLoja){
+            jogo.numero=i+1
+            i++
+        }
+    }
+    public mudarUsuario(novoUsuario:string): void{
+        this.conta.novouser(novoUsuario)
+        console.log(`Seu novo usuario e ${this.conta.usuario}`)
+        return this.conta.visualizar()
     }
 
-	deletar(biblioteca:string[]): void {
-    let buscabiblio=this.buscarBiblio();
-
-    if (buscabiblio!=null) {
-        this.listaContas.splice(this.listaContas.indexOf(buscabiblio), 1);
-        console.log(colors.fg.blue,`\nA Conta numero: ${numero} foi apagada com sucesso!`, colors.reset);
-    } else
-        console.log(colors.fg.yellow,`\nA Conta numero: ${numero} não foi encontrada!`, colors.reset)
-    }
-    comprar(usuario:string,valor: number):void{}
-	
-    presente(numeroOrigem: number, numeroDestino: number, valor: number): void{}
-
-public buscarJogoArray(numero:number):Jogo|null{
-    for(let jogo of this.listaJogos){
-        if(jogo.numero===numero)
-            return jogo;
-    } return null;
-}
-public buscarContaArray(numero:number):Conta|null{
-    for(let conta of this.listaContas){
-        if(conta.numConta===numero)
-            return conta;
-    } return null;
-}
-/*public buscarBiblio(biblioteca:string[]):Conta|null{
-    for(let jogo of this.listaJogos){
-        if(jogo.nome===nomeJo)
-            return jogo;
-    } return null;
-}*/
+    public addSaldo(adicionado:number): void{
+        const soma=this.conta.saldo+adicionado
+        this.conta.addSaldo(soma)
+        this.visualizarConta()
+        }
 }
